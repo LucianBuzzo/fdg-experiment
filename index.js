@@ -1,5 +1,7 @@
 const deps = require('./jellyfish-deps.json')
 
+let active = null
+
 let graph = {
   nodes: [],
   links: []
@@ -14,23 +16,23 @@ const internals = []
 for (const file in deps.files) {
   if (deps.files[file].dependencies.length) {
     for (const dep of deps.files[file].dependencies) {
-      if (!dep.realpath) {
-        console.log(file)
-        console.log(dep)
-        debugger;
-      }
       const target = dep.realpath
 
-      if (dep.type === 'internal' && internals.indexOf(target) === -1) {
+      const type = target.indexOf('node_modules') === 0 ? 'module' :
+        dep.type === 'internal' ? 'internal' : 'local'
+
+      if (type === 'internal' && internals.indexOf(target) === -1) {
+        console.log('ADDING INTERNAL TYPE', { target })
         graph.nodes.push({
           id: target,
-          group: 2
+          group: 1
         })
+        internals.push(target)
       }
 
       for (const node of graph.nodes) {
         if (node.id === target) {
-          node.type = dep.type
+          node.type = type
           break
         }
       }
@@ -38,14 +40,15 @@ for (const file in deps.files) {
       graph.links.push({
         source: file,
         target,
-        value: dep.type === 'module' ? 1 : 3
+        value: type === 'module' ? 2 : 1
       })
     }
   }
 }
 
-console.log(graph)
+// graph.links = graph.links.slice(0, graph.links.length / 2)
 
+console.log(graph)
 
 var canvas = document.querySelector("canvas"),
     context = canvas.getContext("2d"),
@@ -81,6 +84,12 @@ function ticked() {
   context.stroke();
 
   graph.nodes.forEach(drawNode);
+
+  if (active) {
+    context.fillStyle = 'black'
+    context.font = '14px monospace';
+    context.fillText(active.id, active.x + 5, active.y + 2);
+  }
 }
 
 function dragsubject() {
@@ -91,6 +100,8 @@ function dragstarted() {
   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
   d3.event.subject.fx = d3.event.subject.x;
   d3.event.subject.fy = d3.event.subject.y;
+
+  active = d3.event.subject
 }
 
 function dragged() {
@@ -102,6 +113,8 @@ function dragended() {
   if (!d3.event.active) simulation.alphaTarget(0);
   d3.event.subject.fx = null;
   d3.event.subject.fy = null;
+
+  active = null
 }
 
 function drawLink(d) {
