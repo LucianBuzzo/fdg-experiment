@@ -80,11 +80,7 @@ function ticked() {
   context.strokeStyle = "#aaa";
   context.stroke();
 
-  context.beginPath();
   graph.nodes.forEach(drawNode);
-  context.fill();
-  context.strokeStyle = "#fff";
-  context.stroke();
 }
 
 function dragsubject() {
@@ -114,7 +110,13 @@ function drawLink(d) {
 }
 
 function drawNode(d) {
+  const color = d.type === 'local' ? "limegreen" : "purple";
+  context.beginPath();
   context.moveTo(d.x + 3, d.y);
   context.arc(d.x, d.y, 3, 0, 2 * Math.PI);
+  context.fillStyle = color
+  context.fill();
+  context.strokeStyle = color
+  context.stroke();
 }
 
